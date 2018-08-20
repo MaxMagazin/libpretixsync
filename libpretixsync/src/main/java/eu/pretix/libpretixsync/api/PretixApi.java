@@ -2,6 +2,7 @@ package eu.pretix.libpretixsync.api;
 
 import eu.pretix.libpretixsync.check.TicketCheckProvider;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -31,13 +32,14 @@ public class PretixApi {
      * See https://docs.pretix.eu/en/latest/api/index.html for API documentation
      */
 
-    public static final int SUPPORTED_API_VERSION = 4;
+    public static final int SUPPORTED_API_VERSION = 5;
     public static final MediaType JSON
             = MediaType.parse("application/json; charset=utf-8");
 
     private String url;
     private String eventSlug;
     private String key;
+    private String listId;
     private int version;
     private OkHttpClient client;
     private SentryInterface sentry;
@@ -82,10 +84,82 @@ public class PretixApi {
     }
 
     public JSONObject redeem(String secret, List<TicketCheckProvider.Answer> answers, boolean ignore_unpaid) throws ApiException {
-        return new JSONObject();
+        return redeem(secret, null, false, null, answers, ignore_unpaid);
     }
 
-    public JSONObject redeem(String secret, Date datetime, boolean force, String nonce, List<TicketCheckProvider.Answer> answers, boolean ignore_unpaid) throws ApiException {
+    public JSONObject redeem(String id, Date datetime, boolean force, String nonce, List<TicketCheckProvider.Answer> answers, boolean ignore_unpaid) throws ApiException {
+        JSONObject requestJSONObject = new JSONObject();
+
+        try {
+            requestJSONObject.put("questions_supported", "false"); //for now no question/answers used
+
+            if (!answers.isEmpty()) {
+                JSONObject answersJSONObject = new JSONObject();
+
+                for (TicketCheckProvider.Answer a : answers) {
+                    answersJSONObject.put(String.valueOf(a.getQuestion().getServer_id()), a.getValue());
+                }
+
+                requestJSONObject.put("answers", answersJSONObject);
+            }
+
+            if (force) {
+                requestJSONObject.put("force", "true");
+            } else if (ignore_unpaid) {
+                requestJSONObject.put("ignore_unpaid", "true");
+            }
+
+            if (nonce != null) {
+                requestJSONObject.put("nonce", nonce);
+            }
+
+            if (datetime != null) {
+                TimeZone tz = TimeZone.getTimeZone("UTC");
+                DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'", Locale.ENGLISH); // Quoted "Z" to indicate UTC, no timezone offset
+                df.setTimeZone(tz);
+                requestJSONObject.put("datetime", df.format(datetime));
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        //TODO list id, order id), secret,
+
+        ApiResponse apiResponse = postResource(orderPositionRedeemUrl(id), requestJSONObject);
+        return apiResponse.getData();
+    }
+
+    /**
+     *
+     * //GET /api/v1/organizers/(organizer)/events/(event)/checkinlists/
+     *
+     */
+    public boolean getCheckinListId() throws ApiException {
+        ApiResponse apiResponse = null;
+        try {
+            apiResponse = fetchResource(checkinListUrl());
+        } catch (ResourceNotModified resourceNotModified) {
+            resourceNotModified.printStackTrace();
+            return false;
+        }
+
+        JSONObject resultBody = apiResponse.getData();
+
+        try {
+            JSONArray checkinListArray = resultBody.getJSONArray("results");
+
+            JSONObject firstListObject = checkinListArray.getJSONObject(0);
+
+            listId = firstListObject.getString("id");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+
+        return false;
+    }
+
+    public JSONObject getOrderPositions(String if_modified_since) throws ApiException {
         return new JSONObject();
     }
 
@@ -113,6 +187,24 @@ public class PretixApi {
     public String eventResourceUrl(String resource) {
         try {
             return new URL(new URL(url), "events/" + eventSlug + "/" + resource + "/").toString();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public String orderPositionRedeemUrl(String id) {
+        try {
+            return new URL(new URL(url), "/checkinlists/" + listId + "/positions/" + id + "/redeem/").toString();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public String checkinListUrl() {
+        try {
+            return new URL(new URL(url), "/checkinlists/").toString();
         } catch (MalformedURLException e) {
             e.printStackTrace();
             return null;

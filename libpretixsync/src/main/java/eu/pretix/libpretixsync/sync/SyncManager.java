@@ -53,11 +53,11 @@ public class SyncManager {
 
         try {
             uploadTicketData();
-            uploadReceipts();
-            uploadClosings();
+//            uploadReceipts();  //FIXME: temp comment it out to make it working
+//            uploadClosings();  //FIXME: temp comment it out to make it working
 
             if (force || (System.currentTimeMillis() - configStore.getLastDownload()) > download_interval) {
-                downloadData();
+//                downloadData();   //FIXME: temp comment it out to make it working
                 configStore.setLastDownload(System.currentTimeMillis());
             }
 
