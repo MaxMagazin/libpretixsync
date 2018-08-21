@@ -132,6 +132,24 @@ public class OrderSyncAdapter extends BaseDownloadSyncAdapter<Order, String> {
         }
         return apiResponse.getData();
     }
+    //FIXME: copy of BaseDownloadSyncAdapter.downloadRawData method, cause we use predifined url with event inside
+    protected List<JSONObject> downloadRawData() throws JSONException, ApiException, ResourceNotModified {
+        List<JSONObject> result = new ArrayList<>();
+        String url = api.ordersUrl();
+        boolean isFirstPage = true;
+        while (true) {
+            JSONObject page = downloadPage(url, isFirstPage);
+            for (int i = 0; i < page.getJSONArray("results").length(); i++) {
+                result.add(page.getJSONArray("results").getJSONObject(i));
+            }
+            if (page.isNull("next")) {
+                break;
+            }
+            url = page.getString("next");
+            isFirstPage = false;
+        }
+        return result;
+    }
 
     @Override
     Iterator<Order> getKnownObjectsIterator() {
