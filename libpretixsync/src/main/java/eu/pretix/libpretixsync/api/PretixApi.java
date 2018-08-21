@@ -125,23 +125,29 @@ public class PretixApi {
             e.printStackTrace();
         }
 
-        //TODO list id, order id), secret,
+        boolean hasListId = listId != null && !listId.isEmpty();
+        if (!hasListId) {
+            hasListId = getCheckinListId();
+        }
 
-        ApiResponse apiResponse = postResource(orderPositionRedeemUrl(id), requestJSONObject);
-        return apiResponse.getData();
+        if (hasListId) {
+            ApiResponse apiResponse = postResource(orderPositionRedeemUrl(id), requestJSONObject);
+            return apiResponse.getData();
+        } else {
+            return new JSONObject();
+        }
     }
 
-    /**
-     *
-     * //GET /api/v1/organizers/(organizer)/events/(event)/checkinlists/
-     *
-     */
     public boolean getCheckinListId() throws ApiException {
         ApiResponse apiResponse = null;
         try {
             apiResponse = fetchResource(checkinListUrl());
         } catch (ResourceNotModified resourceNotModified) {
             resourceNotModified.printStackTrace();
+            return false;
+        }
+
+        if (apiResponse == null) {
             return false;
         }
 
@@ -155,14 +161,9 @@ public class PretixApi {
             listId = firstListObject.getString("id");
         } catch (JSONException e) {
             e.printStackTrace();
+            return false;
         }
-
-
-        return false;
-    }
-
-    public JSONObject getOrderPositions(String if_modified_since) throws ApiException {
-        return new JSONObject();
+        return true;
     }
 
     public JSONObject status() throws ApiException {
@@ -197,7 +198,7 @@ public class PretixApi {
 
     public String orderPositionRedeemUrl(String id) {
         try {
-            return new URL(new URL(url), "/checkinlists/" + listId + "/positions/" + id + "/redeem/").toString();
+            return new URL(new URL(url), "checkinlists/" + listId + "/positions/" + id + "/redeem/").toString();
         } catch (MalformedURLException e) {
             e.printStackTrace();
             return null;
@@ -206,7 +207,16 @@ public class PretixApi {
 
     public String checkinListUrl() {
         try {
-            return new URL(new URL(url), "/checkinlists/").toString();
+            return new URL(new URL(url), "checkinlists/").toString();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public String ordersUrl() {
+        try {
+            return new URL(new URL(url), "orders/").toString();
         } catch (MalformedURLException e) {
             e.printStackTrace();
             return null;
