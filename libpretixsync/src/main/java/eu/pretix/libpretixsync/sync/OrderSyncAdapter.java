@@ -4,6 +4,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -118,10 +120,18 @@ public class OrderSyncAdapter extends BaseDownloadSyncAdapter<Order, String> {
                 url += "?pdf_data=true";
             }
         } else {
+
+            String urlEncodedDate = null;
+            try {
+                urlEncodedDate = URLEncoder.encode(resourceLastModified.getLast_modified(), "utf-8");
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+
             if (url.contains("?")) {
-                url += "&pdf_data=true&3modified_since=" + resourceLastModified.getLast_modified();
+                url += "&pdf_data=true&modified_since=" + urlEncodedDate;
             } else {
-                url += "?pdf_data=true&modified_since=" + resourceLastModified.getLast_modified();
+                url += "?pdf_data=true&modified_since=" + urlEncodedDate;
             }
         }
 
@@ -131,24 +141,6 @@ public class OrderSyncAdapter extends BaseDownloadSyncAdapter<Order, String> {
             store.upsert(resourceLastModified);
         }
         return apiResponse.getData();
-    }
-    //FIXME: copy of BaseDownloadSyncAdapter.downloadRawData method, cause we use predifined url with event inside
-    protected List<JSONObject> downloadRawData() throws JSONException, ApiException, ResourceNotModified {
-        List<JSONObject> result = new ArrayList<>();
-        String url = api.ordersUrl();
-        boolean isFirstPage = true;
-        while (true) {
-            JSONObject page = downloadPage(url, isFirstPage);
-            for (int i = 0; i < page.getJSONArray("results").length(); i++) {
-                result.add(page.getJSONArray("results").getJSONObject(i));
-            }
-            if (page.isNull("next")) {
-                break;
-            }
-            url = page.getString("next");
-            isFirstPage = false;
-        }
-        return result;
     }
 
     @Override

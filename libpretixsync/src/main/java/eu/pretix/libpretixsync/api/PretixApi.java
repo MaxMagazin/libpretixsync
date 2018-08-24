@@ -187,7 +187,8 @@ public class PretixApi {
 
     public String eventResourceUrl(String resource) {
         try {
-            return new URL(new URL(url), "events/" + eventSlug + "/" + resource + "/").toString();
+//            return new URL(new URL(url), "events/" + eventSlug + "/" + resource + "/").toString();
+            return new URL(new URL(url), resource + "/").toString(); //FIXME: fix for url with event slug within
         } catch (MalformedURLException e) {
             e.printStackTrace();
             return null;
