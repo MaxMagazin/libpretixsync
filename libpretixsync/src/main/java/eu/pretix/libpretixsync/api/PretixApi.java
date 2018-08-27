@@ -167,11 +167,11 @@ public class PretixApi {
     }
 
     public JSONObject status() throws ApiException {
-        return new JSONObject();
+        return new JSONObject(); // TODO: 27.08.18
     }
 
     public JSONObject search(String query) throws ApiException {
-        return new JSONObject();
+        return new JSONObject(); // TODO: 27.08.18
     }
 
     public JSONObject download() throws ApiException {
@@ -208,15 +208,6 @@ public class PretixApi {
     public String checkinListUrl() {
         try {
             return new URL(new URL(url), "checkinlists/").toString();
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    public String ordersUrl() {
-        try {
-            return new URL(new URL(url), "orders/").toString();
         } catch (MalformedURLException e) {
             e.printStackTrace();
             return null;

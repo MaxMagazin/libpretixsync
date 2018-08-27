@@ -1,6 +1,7 @@
 package eu.pretix.libpretixsync.check;
 
 
+import eu.pretix.libpretixsync.db.OrderPosition;
 import eu.pretix.libpretixsync.db.Question;
 import eu.pretix.libpretixsync.db.QuestionOption;
 import org.json.JSONArray;
@@ -17,20 +18,24 @@ import eu.pretix.libpretixsync.api.DefaultHttpClientFactory;
 import eu.pretix.libpretixsync.api.HttpClientFactory;
 import eu.pretix.libpretixsync.api.PretixApi;
 import eu.pretix.libpretixsync.config.ConfigStore;
+import io.requery.BlockingEntityStore;
+import io.requery.Persistable;
 
 public class OnlineCheckProvider implements TicketCheckProvider {
     protected PretixApi api;
     private ConfigStore config;
     private SentryInterface sentry;
+    private BlockingEntityStore<Persistable> dataStore;
 
-    public OnlineCheckProvider(ConfigStore config, HttpClientFactory httpClientFactory) {
+    public OnlineCheckProvider(ConfigStore config, HttpClientFactory httpClientFactory, BlockingEntityStore<Persistable> dataStore) {
         this.config = config;
         this.api = PretixApi.fromConfig(config, httpClientFactory);
+        this.dataStore = dataStore;
         this.sentry = new DummySentryImplementation();
     }
 
-    public OnlineCheckProvider(ConfigStore config) {
-        this(config, new DefaultHttpClientFactory());
+    public OnlineCheckProvider(ConfigStore config, BlockingEntityStore<Persistable> dataStore) {
+        this(config, new DefaultHttpClientFactory(), dataStore);
     }
 
     public SentryInterface getSentry() {
@@ -45,9 +50,22 @@ public class OnlineCheckProvider implements TicketCheckProvider {
     @Override
     public CheckResult check(String ticketid, List<Answer> answers, boolean ignore_unpaid) {
         sentry.addBreadcrumb("provider.check", "started");
+
+        List<OrderPosition> orderPositions = dataStore.select(OrderPosition.class)
+                .where(OrderPosition.SECRET.eq(ticketid))
+                .get().toList();
+
+        if (orderPositions.size() == 0) {
+            return new CheckResult(CheckResult.Type.INVALID);
+        }
+
+        OrderPosition orderPosition = orderPositions.get(0);
+
+        String ticketServerId = String.valueOf(orderPosition.getServer_id());
+
         try {
             CheckResult res = new CheckResult(CheckResult.Type.ERROR);
-            JSONObject response = api.redeem(ticketid, answers, ignore_unpaid);
+            JSONObject response = api.redeem(ticketServerId, answers, ignore_unpaid);
             String status = response.getString("status");
             if ("ok".equals(status)) {
                 res.setType(CheckResult.Type.VALID);

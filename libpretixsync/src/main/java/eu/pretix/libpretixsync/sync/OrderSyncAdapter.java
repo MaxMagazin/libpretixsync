@@ -124,7 +124,7 @@ public class OrderSyncAdapter extends BaseDownloadSyncAdapter<Order, String> {
         } else {
             try {
                 if (url.contains("?")) {
-                    url += "&pdf_data=true&3modified_since=" + URLEncoder.encode(resourceLastModified.getLast_modified(), "UTF-8");
+                    url += "&pdf_data=true&modified_since=" + URLEncoder.encode(resourceLastModified.getLast_modified(), "UTF-8");
                 } else {
                     url += "?pdf_data=true&modified_since=" + URLEncoder.encode(resourceLastModified.getLast_modified(), "UTF-8");
                 }
