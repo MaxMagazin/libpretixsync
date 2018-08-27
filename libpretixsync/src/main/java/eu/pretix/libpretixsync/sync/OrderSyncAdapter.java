@@ -107,31 +107,37 @@ public class OrderSyncAdapter extends BaseDownloadSyncAdapter<Order, String> {
 
     @Override
     protected JSONObject downloadPage(String url, boolean isFirstPage) throws ApiException, ResourceNotModified {
-        ResourceLastModified resourceLastModified = store.select(ResourceLastModified.class)
+
+        ResourceLastModified resourceLastModified = null;
+
+        if (isFirstPage) {
+            resourceLastModified = store.select(ResourceLastModified.class)
                 .where(ResourceLastModified.RESOURCE.eq("orders"))
                 .limit(1)
                 .get().firstOrNull();
-        if (resourceLastModified == null) {
-            resourceLastModified = new ResourceLastModified();
-            resourceLastModified.setResource("orders");
-            if (url.contains("?")) {
-                url += "&pdf_data=true";
-            } else {
-                url += "?pdf_data=true";
-            }
-        } else {
 
-            String urlEncodedDate = null;
-            try {
-                urlEncodedDate = URLEncoder.encode(resourceLastModified.getLast_modified(), "utf-8");
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-            }
-
-            if (url.contains("?")) {
-                url += "&pdf_data=true&modified_since=" + urlEncodedDate;
+            if (resourceLastModified == null) {
+                resourceLastModified = new ResourceLastModified();
+                resourceLastModified.setResource("orders");
+                if (url.contains("?")) {
+                    url += "&pdf_data=true";
+                } else {
+                    url += "?pdf_data=true";
+                }
             } else {
-                url += "?pdf_data=true&modified_since=" + urlEncodedDate;
+
+                String urlEncodedDate = null;
+                try {
+                    urlEncodedDate = URLEncoder.encode(resourceLastModified.getLast_modified(), "utf-8");
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+
+                if (url.contains("?")) {
+                    url += "&pdf_data=true&modified_since=" + urlEncodedDate;
+                } else {
+                    url += "?pdf_data=true&modified_since=" + urlEncodedDate;
+                }
             }
         }
 

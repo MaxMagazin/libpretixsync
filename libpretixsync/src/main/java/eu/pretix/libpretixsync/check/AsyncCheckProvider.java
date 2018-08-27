@@ -40,20 +40,18 @@ public class AsyncCheckProvider implements TicketCheckProvider {
     @Override
     public CheckResult check(String ticketid, List<Answer> answers, boolean ignore_unpaid) {
         sentry.addBreadcrumb("provider.check", "offline check started");
-        return new CheckResult(CheckResult.Type.INVALID);
 
-        /*
-        List<Ticket> tickets = dataStore.select(Ticket.class)
-                .where(Ticket.SECRET.eq(ticketid))
+        List<OrderPosition> orderPositions = dataStore.select(OrderPosition.class)
+                .where(OrderPosition.SECRET.eq(ticketid))
                 .get().toList();
 
-        if (tickets.size() == 0) {
+        if (orderPositions.size() == 0) {
             return new CheckResult(CheckResult.Type.INVALID);
         }
 
-        Ticket ticket = tickets.get(0);
+        OrderPosition orderPosition = orderPositions.get(0);
 
-        List<Item> items = dataStore.select(Item.class).where(Item.SERVER_ID.eq(ticket.getItem_id())).get().toList();
+        List<Item> items = dataStore.select(Item.class).where(Item.SERVER_ID.eq(orderPosition.getItem().getServer_id())).get().toList();
         List<Question> questions = new ArrayList<>();
         if (items.size() == 1) {
             Item item = items.get(0);
@@ -61,15 +59,17 @@ public class AsyncCheckProvider implements TicketCheckProvider {
         }
 
         CheckResult res = new CheckResult(CheckResult.Type.ERROR);
-        res.setCheckinAllowed(ticket.isCheckin_allowed());
+//        res.setCheckinAllowed(ticket.isCheckin_allowed()); //FIXME: no corresponding field in OrderPosition?
 
         long queuedCheckIns = dataStore.count(QueuedCheckIn.class)
                 .where(QueuedCheckIn.SECRET.eq(ticketid))
                 .get().value();
 
-        if ((!ticket.isPaid() && !ignore_unpaid) || !ticket.isCheckin_allowed()) {
-            res.setType(CheckResult.Type.UNPAID);
-        } else if (ticket.isRedeemed() || queuedCheckIns > 0) {
+//        if ((!ticket.isPaid() && !ignore_unpaid) || !ticket.isCheckin_allowed()) {  //FIXME: no corresponding field in OrderPosition?
+//            res.setType(CheckResult.Type.UNPAID);
+//        } else if (ticket.isRedeemed() || queuedCheckIns > 0) {
+
+        if (orderPosition.isCheckedIn() || queuedCheckIns > 0) {
             res.setType(CheckResult.Type.USED);
         } else {
             Map<Long, String> answerMap = new HashMap<>();
@@ -104,27 +104,25 @@ public class AsyncCheckProvider implements TicketCheckProvider {
                 res.setRequiredAnswers(required_answers);
             } else {
                 res.setType(CheckResult.Type.VALID);
-                ticket.setRedeemed(true);
-                dataStore.update(ticket);
 
                 QueuedCheckIn qci = new QueuedCheckIn();
                 qci.generateNonce();
-                qci.setSecret(ticketid);
+                qci.setSecret(String.valueOf(orderPosition.getServer_id()));
                 qci.setDatetime(new Date());
                 qci.setAnswers(givenAnswers.toString());
                 dataStore.insert(qci);
             }
         }
 
-        res.setTicket(ticket.getItem());
-        res.setVariation(ticket.getVariation());
-        res.setAttendee_name(ticket.getAttendee_name());
-        res.setOrderCode(ticket.getOrder());
-        res.setRequireAttention(ticket.isRequire_attention());
-        res.setCheckinAllowed(ticket.isCheckin_allowed());
+        res.setTicket(orderPosition.getItem().getName());
+        res.setVariation(String.valueOf(orderPosition.getVariationId()));
+        res.setAttendee_name(orderPosition.getAttendee_name());
+        res.setOrderCode(orderPosition.getOrder().getCode());
+        res.setRequireAttention(orderPosition.getOrder().checkin_attention);
+//        res.setCheckinAllowed(ticket.isCheckin_allowed()); //FIXME: no corresponding field in OrderPosition?
 
         return res;
-        */
+
     }
 
     @Override
@@ -132,45 +130,42 @@ public class AsyncCheckProvider implements TicketCheckProvider {
         sentry.addBreadcrumb("provider.search", "offline search started");
 
         List<SearchResult> results = new ArrayList<>();
-        /*
 
         if (query.length() < 4) {
             return results;
         }
 
-
-        List<Ticket> tickets;
+        List<OrderPosition> orderPositions;
         if (config.getAllowSearch()) {
-            tickets = dataStore.select(Ticket.class)
+            orderPositions = dataStore.select(OrderPosition.class)
                     .where(
-                            Ticket.SECRET.like(query + "%")
-                                    .or(Ticket.ATTENDEE_NAME.like("%" + query + "%"))
-                                    .or(Ticket.ORDER.like(query + "%"))
+                            OrderPosition.SECRET.like(query + "%")
+                                    .or(OrderPosition.ATTENDEE_NAME.like("%" + query + "%"))
+                                    .or(OrderPosition.ORDER.like(query + "%"))
                     )
                     .limit(25)
                     .get().toList();
         } else {
-            tickets = dataStore.select(Ticket.class)
+            orderPositions = dataStore.select(OrderPosition.class)
                     .where(
-                            Ticket.SECRET.like(query + "%")
+                            OrderPosition.SECRET.like(query + "%")
                     )
                     .limit(25)
                     .get().toList();
         }
 
-        for (Ticket ticket : tickets) {
+        for (OrderPosition pos : orderPositions) {
             SearchResult sr = new SearchResult();
-            sr.setTicket(ticket.getItem());
-            sr.setVariation(ticket.getVariation());
-            sr.setAttendee_name(ticket.getAttendee_name());
-            sr.setOrderCode(ticket.getOrder());
-            sr.setSecret(ticket.getSecret());
-            sr.setRedeemed(ticket.isRedeemed());
-            sr.setPaid(ticket.isPaid());
-            sr.setRequireAttention(ticket.isRequire_attention());
+            sr.setTicket(pos.getItem().getName());
+            sr.setVariation(String.valueOf(pos.getVariationId()));
+            sr.setAttendee_name(pos.getAttendee_name());
+            sr.setOrderCode(pos.getOrder().getCode());
+            sr.setSecret(pos.getSecret());
+            sr.setRedeemed(pos.isCheckedIn());
+            sr.setPaid("p".equals(pos.getOrder().getStatus()));
+            sr.setRequireAttention(pos.getOrder().checkin_attention);
             results.add(sr);
         }
-        */
         return results;
     }
 
@@ -187,9 +182,8 @@ public class AsyncCheckProvider implements TicketCheckProvider {
             e.printStackTrace();
             throw new CheckException("Invalid status data available.");
         }
-        /*
 
-        if (dataStore.count(Ticket.class).where(Ticket.ITEM_ID.eq((long) 0)).get().value() > 0) {
+        if (dataStore.count(OrderPosition.class).where(OrderPosition.ITEM_ID.eq((long) 0)).get().value() > 0) {
             throw new CheckException("Incompatible with your current pretix version.");
         }
         int total_all = 0;
@@ -197,35 +191,35 @@ public class AsyncCheckProvider implements TicketCheckProvider {
         for (StatusResultItem resultItem : statusResult.getItems()) {
             int total = 0;
             int checkins = 0;
-            if (resultItem.getActiveVariations().size() > 0) {
-                for (StatusResultItemVariation itemVariation : resultItem.getActiveVariations()) {
+            if (resultItem.getVariations().size() > 0) {
+                for (StatusResultItemVariation itemVariation : resultItem.getVariations()) {
                     itemVariation.setTotal(
-                            dataStore.count(Ticket.class).where(
-                                    Ticket.ITEM_ID.eq(resultItem.getId())
-                                            .and(Ticket.VARIATION_ID.eq(itemVariation.getId()))
-                                            .and(Ticket.PAID.eq(true))
+                            dataStore.count(OrderPosition.class).where(
+                                    OrderPosition.ITEM_ID.eq(resultItem.getId())
+//                                            .and(OrderPosition.VARIATION_ID.eq(itemVariation.getId())) //FIXME: no corresponding field in OrderPosition?
+//                                            .and(OrderPosition.PAID.eq(true)) //FIXME: no corresponding field in OrderPosition?
                             ).get().value()
                     );
                     itemVariation.setCheckins(
-                            dataStore.count(Ticket.class).where(
-                                    Ticket.ITEM_ID.eq(resultItem.getId())
-                                            .and(Ticket.VARIATION_ID.eq(itemVariation.getId()))
-                                            .and(Ticket.REDEEMED.eq(true))
-                                            .and(Ticket.PAID.eq(true))
+                            dataStore.count(OrderPosition.class).where(
+                                    OrderPosition.ITEM_ID.eq(resultItem.getId())
+//                                            .and(OrderPosition.VARIATION_ID.eq(itemVariation.getId())) //FIXME: no corresponding field in OrderPosition?
+//                                            .and(OrderPosition.REDEEMED.eq(true))//FIXME: no corresponding field in OrderPosition?
+//                                            .and(OrderPosition.PAID.eq(true))//FIXME: no corresponding field in OrderPosition?
                             ).get().value()
                     );
                     total += itemVariation.getTotal();
                     checkins += itemVariation.getCheckins();
                 }
             } else {
-                total = dataStore.count(Ticket.class).where(
-                        Ticket.ITEM_ID.eq(resultItem.getId())
-                                .and(Ticket.PAID.eq(true))
+                total = dataStore.count(OrderPosition.class).where(
+                        OrderPosition.ITEM_ID.eq(resultItem.getId())
+//                                .and(Ticket.PAID.eq(true)) //FIXME: no corresponding field in OrderPosition?
                 ).get().value();
-                checkins = dataStore.count(Ticket.class).where(
-                        Ticket.ITEM_ID.eq(resultItem.getId())
-                                .and(Ticket.REDEEMED.eq(true))
-                                .and(Ticket.PAID.eq(true))
+                checkins = dataStore.count(OrderPosition.class).where(
+                        OrderPosition.ITEM_ID.eq(resultItem.getId())
+//                                .and(Ticket.REDEEMED.eq(true)) //FIXME: no corresponding field in OrderPosition?
+//                                .and(Ticket.PAID.eq(true)) //FIXME: no corresponding field in OrderPosition?
                 ).get().value();
             }
             resultItem.setTotal(total);
@@ -235,7 +229,6 @@ public class AsyncCheckProvider implements TicketCheckProvider {
         }
         statusResult.setAlreadyScanned(checkins_all);
         statusResult.setTotalTickets(total_all);
-        */
         return statusResult;
     }
 }

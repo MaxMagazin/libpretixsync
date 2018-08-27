@@ -1,9 +1,16 @@
 package eu.pretix.libpretixsync.db;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.math.BigDecimal;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
+import java.util.zip.CheckedInputStream;
 
 import io.requery.Column;
 import io.requery.Entity;
@@ -110,6 +117,39 @@ public class AbstractOrderPosition implements RemoteObject {
         attendee_email = data.getString("attendee_email");
         secret = data.getString("secret");
         json_data = data.toString();
+    }
+
+    public boolean isCheckedIn() {
+        try {
+            JSONArray checkinArray = getJSON().optJSONArray("checkins");
+            return (checkinArray != null && checkinArray.length() > 0);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public Date getCheckInDate() {
+        try {
+            JSONArray checkinArray = getJSON().optJSONArray("checkins");
+            if (checkinArray != null && checkinArray.length() > 0) {
+                JSONObject firstCheckIn = checkinArray.getJSONObject(0);
+                String dateString = firstCheckIn.getString("datetime");
+
+                TimeZone tz = TimeZone.getTimeZone("UTC");
+                DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
+                df.setTimeZone(tz);
+
+                return df.parse(dateString);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return null;
     }
 
 }
