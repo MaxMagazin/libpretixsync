@@ -40,7 +40,7 @@ public abstract class BaseDownloadSyncAdapter<T extends RemoteObject & Persistab
             List<JSONObject> data = downloadRawData();
             processData(data);
         } catch (ResourceNotModified e) {
-            e.printStackTrace();
+            // Do nothing
         }
     }
 

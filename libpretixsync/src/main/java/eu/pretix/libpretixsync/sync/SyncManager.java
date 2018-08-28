@@ -53,8 +53,8 @@ public class SyncManager {
 
         try {
             uploadTicketData();
-            uploadReceipts();
-            uploadClosings();
+//            uploadReceipts();
+//            uploadClosings();
 
             if (force || (System.currentTimeMillis() - configStore.getLastDownload()) > download_interval) {
                 downloadData();
@@ -75,11 +75,11 @@ public class SyncManager {
         try {
             (new ItemCategorySyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
             (new ItemSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
-            (new QuestionSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
+//            (new QuestionSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
             (new QuotaSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
-            (new TaxRuleSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
+//            (new TaxRuleSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
             (new OrderSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
-            (new TicketLayoutSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
+//            (new TicketLayoutSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
         } catch (JSONException e) {
             e.printStackTrace();
             throw new SyncException("Unknown server response");
