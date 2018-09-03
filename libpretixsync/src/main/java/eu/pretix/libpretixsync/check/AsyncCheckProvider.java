@@ -62,7 +62,7 @@ public class AsyncCheckProvider implements TicketCheckProvider {
 //        res.setCheckinAllowed(ticket.isCheckin_allowed()); //FIXME: no corresponding field in OrderPosition?
 
         long queuedCheckIns = dataStore.count(QueuedCheckIn.class)
-                .where(QueuedCheckIn.SECRET.eq(ticketid))
+                .where(QueuedCheckIn.SECRET.eq(String.valueOf(orderPosition.getServer_id())))
                 .get().value();
 
 //        if ((!ticket.isPaid() && !ignore_unpaid) || !ticket.isCheckin_allowed()) {  //FIXME: no corresponding field in OrderPosition?
