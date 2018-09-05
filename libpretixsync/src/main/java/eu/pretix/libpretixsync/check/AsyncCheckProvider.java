@@ -5,13 +5,18 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.awt.Cursor;
 import java.util.*;
+
+import javax.xml.transform.Result;
 
 import eu.pretix.libpretixsync.DummySentryImplementation;
 import eu.pretix.libpretixsync.SentryInterface;
 import eu.pretix.libpretixsync.config.ConfigStore;
 import io.requery.BlockingEntityStore;
 import io.requery.Persistable;
+import io.requery.query.Tuple;
+import sun.rmi.runtime.Log;
 
 public class AsyncCheckProvider implements TicketCheckProvider {
     private ConfigStore config;
@@ -30,6 +35,16 @@ public class AsyncCheckProvider implements TicketCheckProvider {
 
     public void setSentry(SentryInterface sentry) {
         this.sentry = sentry;
+    }
+
+    @Override
+    public List<String> getTestTicket() {
+        List<String> result = new ArrayList<>();
+
+        io.requery.query.Result r = dataStore.raw("SELECT attendee_name, LENGTH(attendee_name) AS alen FROM OrderPosition ORDER BY alen DESC LIMIT 1");
+        result.add("Attendee Name");
+        result.add("Attendee Company");
+        return result;
     }
 
     @Override

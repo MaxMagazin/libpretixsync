@@ -374,4 +374,6 @@ public interface TicketCheckProvider {
     StatusResult status() throws CheckException;
 
     public void setSentry(SentryInterface sentry);
+
+    List<String> getTestTicket();
 }
