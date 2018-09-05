@@ -11,6 +11,7 @@ import io.requery.JunctionTable;
 import io.requery.Key;
 import io.requery.ManyToMany;
 import io.requery.OneToMany;
+import io.requery.OneToOne;
 import io.requery.Table;
 
 @Table(name = "orders")
@@ -31,6 +32,10 @@ public class AbstractOrder implements RemoteObject {
 
     public boolean checkin_attention;
 
+//    @OneToOne
+//    public InvoiceAddress invoice_address; // TODO: 05.09.18 Maxim: finish implementation
+    public String companyName;
+
     public String json_data;
 
     @OneToMany
@@ -50,4 +55,21 @@ public class AbstractOrder implements RemoteObject {
         return new JSONObject(json_data);
     }
 
+    @Deprecated
+    public String getCompanyNameFromJson() {
+        if (companyName != null && !companyName.isEmpty()) {
+            return companyName;
+        }
+
+        try {
+            JSONObject invoiceAddressObj = getJSON().optJSONObject("invoice_address");
+            if (invoiceAddressObj != null) {
+                companyName = invoiceAddressObj.optString("company");
+            }
+            return companyName;
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

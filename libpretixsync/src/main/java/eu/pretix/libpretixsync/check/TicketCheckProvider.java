@@ -57,6 +57,7 @@ public interface TicketCheckProvider {
         private String ticket;
         private String variation;
         private String attendee_name;
+        private String company_name;
         private String message;
         private String order_code;
         private boolean require_attention;
@@ -102,6 +103,14 @@ public interface TicketCheckProvider {
 
         public void setAttendee_name(String attendee_name) {
             this.attendee_name = attendee_name;
+        }
+
+        public String getCompany_name() {
+            return company_name;
+        }
+
+        public void setCompany_name(String company_name) {
+            this.company_name = company_name;
         }
 
         public String getMessage() {
