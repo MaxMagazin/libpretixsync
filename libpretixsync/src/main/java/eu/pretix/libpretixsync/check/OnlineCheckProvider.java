@@ -48,6 +48,14 @@ public class OnlineCheckProvider implements TicketCheckProvider {
     }
 
     @Override
+    public List<String> getTestTicket() {
+        List<String> result = new ArrayList<>();
+        result.add("Attendee Name");
+        result.add("Attendee Company");
+        return result;
+    }
+
+    @Override
     public CheckResult check(String ticketid, List<Answer> answers, boolean ignore_unpaid) {
         sentry.addBreadcrumb("provider.check", "started");
 
