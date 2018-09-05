@@ -66,6 +66,8 @@ public class OrderSyncAdapter extends BaseDownloadSyncAdapter<Order, String> {
             store.insert(obj);
         }
 
+        obj.getCompanyNameFromJson();
+
         Map<Long, OrderPosition> known = new HashMap<>();
         for (OrderPosition op : obj.getPositions()) {
             known.put(op.getId(), op);

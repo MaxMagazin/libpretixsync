@@ -134,6 +134,7 @@ public class AsyncCheckProvider implements TicketCheckProvider {
         res.setTicket(orderPosition.getItem().getName());
         res.setVariation(String.valueOf(orderPosition.getVariationId()));
         res.setAttendee_name(orderPosition.getAttendee_name());
+        res.setCompany_name(orderPosition.getOrder().getCompanyNameFromJson());
         res.setOrderCode(orderPosition.getOrder().getCode());
         res.setRequireAttention(orderPosition.getOrder().checkin_attention);
 //        res.setCheckinAllowed(ticket.isCheckin_allowed()); //FIXME: no corresponding field in OrderPosition?
