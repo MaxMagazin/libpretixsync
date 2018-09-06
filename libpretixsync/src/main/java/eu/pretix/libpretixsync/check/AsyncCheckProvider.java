@@ -45,6 +45,10 @@ public class AsyncCheckProvider implements TicketCheckProvider {
         io.requery.query.Result r = dataStore.raw("SELECT attendee_name, LENGTH(attendee_name) AS alen FROM OrderPosition ORDER BY alen DESC LIMIT 1");
         MutableTuple mt =  (MutableTuple) r.toList().get(0);
         result.add((String) mt.get("attendee_name"));
+
+//        r = dataStore.raw("SELECT company, LENGTH(company) AS clen FROM OrderPosition ORDER BY clen DESC LIMIT 1");
+//        mt =  (MutableTuple) r.toList().get(0);
+//        result.add((String) mt.get("company"));
         result.add("Attendee Company");
         return result;
     }
