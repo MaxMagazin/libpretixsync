@@ -48,11 +48,9 @@ public class OnlineCheckProvider implements TicketCheckProvider {
     }
 
     @Override
-    public List<String> getTestTicket() {
-        List<String> result = new ArrayList<>();
-        result.add("Attendee Name");
-        result.add("Attendee Company");
-        return result;
+    public String getLongestName() {
+        // TODO: not implemented
+        return "Hans Wurst von hinten";
     }
 
     @Override

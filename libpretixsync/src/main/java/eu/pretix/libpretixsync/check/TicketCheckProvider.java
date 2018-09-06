@@ -384,5 +384,5 @@ public interface TicketCheckProvider {
 
     public void setSentry(SentryInterface sentry);
 
-    List<String> getTestTicket();
+    String getLongestName();
 }
