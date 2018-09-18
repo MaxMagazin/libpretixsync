@@ -13,6 +13,7 @@ import eu.pretix.libpretixsync.api.PretixApi;
 import eu.pretix.libpretixsync.check.TicketCheckProvider;
 import eu.pretix.libpretixsync.config.ConfigStore;
 import eu.pretix.libpretixsync.db.Closing;
+import eu.pretix.libpretixsync.db.Order;
 import eu.pretix.libpretixsync.db.Event;
 import eu.pretix.libpretixsync.db.Question;
 import eu.pretix.libpretixsync.db.QueuedCheckIn;
@@ -91,8 +92,12 @@ public class SyncManager {
 //            (new QuestionSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
             (new QuotaSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
 //            (new TaxRuleSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
-            (new OrderSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
 //            (new TicketLayoutSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
+            if (isOrdersStoreEmpty()) {
+                (new InitialOrderSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).initialDownload();
+            } else {
+                (new OrderSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
+            }
         } catch (JSONException e) {
             e.printStackTrace();
             throw new SyncException("Unknown server response");
@@ -100,6 +105,11 @@ public class SyncManager {
             sentry.addBreadcrumb("sync.tickets", "API Error: " + e.getMessage());
             throw new SyncException(e.getMessage());
         }
+    }
+
+    private boolean isOrdersStoreEmpty() {
+        List<Order> existingOrders = dataStore.select(Order.class).limit(5).get().toList();
+        return (existingOrders == null || existingOrders.isEmpty());
     }
 
     protected void uploadReceipts() throws SyncException {
