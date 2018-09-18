@@ -279,8 +279,11 @@ public class PretixApi {
 
     private ApiResponse apiCall(Request request, boolean json) throws ApiException, ResourceNotModified {
         Response response;
+        float requestExecTime;
         try {
+            long requestExecStart = System.nanoTime();
             response = client.newCall(request).execute();
+            requestExecTime = (System.nanoTime() - requestExecStart) / 1000000f;
         } catch (SSLException e) {
             e.printStackTrace();
             throw new ApiException("Error while creating a secure connection.", e);
@@ -291,6 +294,8 @@ public class PretixApi {
 
         String safe_url = request.url().toString().replaceAll("^(.*)key=([0-9A-Za-z]+)([^0-9A-Za-z]*)", "$1key=redacted$3");
         sentry.addHttpBreadcrumb(safe_url, request.method(), response.code());
+
+        //System.out.println("Request exec time: " + requestExecTime + "ms, url: " + safe_url);
 
         if (response.code() >= 500) {
             response.close();
@@ -310,8 +315,13 @@ public class PretixApi {
                 if (body.startsWith("[")) {
                     body = "{\"content\": " + body + "}";
                 }
+
+                long parcingStart = System.nanoTime();
+                JSONObject jo = new JSONObject(body);
+                //System.out.println("parcing time: " + (System.nanoTime() - parcingStart) / 1000000f + "ms");
+
                 return new ApiResponse(
-                        new JSONObject(body),
+                        jo,
                         response
                 );
             } else {

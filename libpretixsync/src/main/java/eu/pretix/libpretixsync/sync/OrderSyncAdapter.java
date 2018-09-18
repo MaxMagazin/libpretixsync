@@ -43,7 +43,7 @@ public class OrderSyncAdapter extends BaseDownloadSyncAdapter<Order, String> {
         return itemCache.get(id);
     }
 
-    private void updatePositionObject(OrderPosition obj, JSONObject jsonobj) throws JSONException {
+    protected void updatePositionObject(OrderPosition obj, JSONObject jsonobj) throws JSONException {
         obj.setServer_id(jsonobj.getLong("id"));
         obj.setPositionid(jsonobj.getLong("positionid"));
         obj.setAttendee_name(jsonobj.optString("attendee_name"));
