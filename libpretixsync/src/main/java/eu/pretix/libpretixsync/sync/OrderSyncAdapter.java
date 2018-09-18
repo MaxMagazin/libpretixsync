@@ -61,12 +61,11 @@ public class OrderSyncAdapter extends BaseDownloadSyncAdapter<Order, String> {
         obj.setEmail(jsonobj.optString("email"));
         obj.setCheckin_attention(jsonobj.optBoolean("checkin_attention"));
         obj.setJson_data(jsonobj.toString());
+        obj.getCompanyNameFromJson();
 
         if (obj.getId() == null) {
             store.insert(obj);
         }
-
-        obj.getCompanyNameFromJson();
 
         Map<Long, OrderPosition> known = new HashMap<>();
         for (OrderPosition op : obj.getPositions()) {
@@ -118,17 +117,21 @@ public class OrderSyncAdapter extends BaseDownloadSyncAdapter<Order, String> {
             resourceLastModified = new ResourceLastModified();
             resourceLastModified.setResource("orders");
             resourceLastModified.setEvent_slug(eventSlug);
-            if (url.contains("?")) {
-                url += "&pdf_data=true";
-            } else {
-                url += "?pdf_data=true";
+
+            boolean addPdfDataParam = false;
+            if (addPdfDataParam) {
+                if (url.contains("?")) {
+                    url += "&pdf_data=true";
+                } else {
+                    url += "?pdf_data=true";
+                }
             }
         } else {
             try {
                 if (url.contains("?")) {
-                    url += "&pdf_data=true&modified_since=" + URLEncoder.encode(resourceLastModified.getLast_modified(), "UTF-8");
+                    url += "&modified_since=" + URLEncoder.encode(resourceLastModified.getLast_modified(), "UTF-8");
                 } else {
-                    url += "?pdf_data=true&modified_since=" + URLEncoder.encode(resourceLastModified.getLast_modified(), "UTF-8");
+                    url += "?modified_since=" + URLEncoder.encode(resourceLastModified.getLast_modified(), "UTF-8");
                 }
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
