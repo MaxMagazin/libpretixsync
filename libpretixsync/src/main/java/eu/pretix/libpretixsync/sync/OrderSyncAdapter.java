@@ -130,7 +130,7 @@ public class OrderSyncAdapter extends BaseDownloadSyncAdapter<Order, String> {
             if (resourceLastModified == null) {
                 resourceLastModified = new ResourceLastModified();
                 resourceLastModified.setResource("orders");
-            } else {
+            } else if (resourceLastModified.isDownloadCompleted()) {
                 try {
                     String urlEncodedDate = URLEncoder.encode(resourceLastModified.getLast_modified(), "utf-8");
 

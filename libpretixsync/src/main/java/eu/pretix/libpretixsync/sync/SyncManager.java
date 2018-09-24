@@ -41,6 +41,10 @@ public class SyncManager {
     }
 
     public void sync(boolean force) {
+        sync(force, null);
+    }
+
+    public void sync(boolean force, InitialOrderSyncAdapter.OnInitialOrderSyncProgressListener onInitialSyncProgressListener) {
         if (!configStore.isConfigured()) {
             return;
         }
@@ -58,7 +62,7 @@ public class SyncManager {
 //            uploadClosings();
 
             if (force || (System.currentTimeMillis() - configStore.getLastDownload()) > download_interval) {
-                downloadData();
+                downloadData(onInitialSyncProgressListener);
                 configStore.setLastDownload(System.currentTimeMillis());
             }
 
@@ -70,7 +74,7 @@ public class SyncManager {
         }
     }
 
-    protected void downloadData() throws SyncException {
+    protected void downloadData(InitialOrderSyncAdapter.OnInitialOrderSyncProgressListener onInitialSyncProgressListener) throws SyncException {
         sentry.addBreadcrumb("sync.queue", "Start download");
 
         try {
@@ -81,7 +85,7 @@ public class SyncManager {
 //            (new TaxRuleSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
 //            (new TicketLayoutSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
             if (isOrdersStoreEmpty()) {
-                (new InitialOrderSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).initialDownload();
+                (new InitialOrderSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).initialDownload(onInitialSyncProgressListener);
             } else {
                 (new OrderSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
             }
