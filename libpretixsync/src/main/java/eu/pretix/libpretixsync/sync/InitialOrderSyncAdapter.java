@@ -35,8 +35,6 @@ public class InitialOrderSyncAdapter extends OrderSyncAdapter {
         void onInitialOrderSyncProgress(int percentage);
     }
 
-    private OnInitialOrderSyncProgressListener mProgressListener;
-
     public void saveOrder(JSONObject jsonobj) throws JSONException {
         Order order = newEmptyObject();
         order.setEvent_slug(eventSlug);
@@ -66,7 +64,7 @@ public class InitialOrderSyncAdapter extends OrderSyncAdapter {
     }
 
 
-    public void initialDownload() throws JSONException, ApiException {
+    public void initialDownload(OnInitialOrderSyncProgressListener listener) throws JSONException, ApiException {
         List<Order> existingOrders = store.select(Order.class).limit(5).get().toList();
 
         if (existingOrders == null || existingOrders.isEmpty()) { //use custom logic for initial download
@@ -92,14 +90,24 @@ public class InitialOrderSyncAdapter extends OrderSyncAdapter {
                     }
 
                     if (page.isNull("next")) {
+                        //update ResourceLastModified finish flag, meaning that download is completely finished
+                        ResourceLastModified resourceLastModified = store.select(ResourceLastModified.class)
+                                .where(ResourceLastModified.RESOURCE.eq("orders"))
+                                .limit(1)
+                                .get().firstOrNull();
+
+                        if (resourceLastModified != null) {
+                            resourceLastModified.setDownloadCompleted(true);
+                            store.upsert(resourceLastModified);
+                        }
                         break;
                     }
 
                     url = page.getString("next");
                     isFirstPage = false;
 
-                    if (mProgressListener != null) {
-                        mProgressListener.onInitialOrderSyncProgress(processedOrdersNumber/page.getInt("count"));
+                    if (listener != null) {
+                        listener.onInitialOrderSyncProgress((processedOrdersNumber * 100)/page.getInt("count"));
                     }
                 } else {
                     break;

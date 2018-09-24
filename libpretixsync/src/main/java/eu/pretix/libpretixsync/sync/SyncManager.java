@@ -41,13 +41,17 @@ public class SyncManager {
         this.fileStorage = fileStorage;
     }
 
+    public SyncResult void sync(boolean force) {
+        sync(force, null);
+    }
+
     /**
      * Synchronize data with the pretix server
      *
      * @param force Force a new sync
      * @return A SyncResult describing the results of the synchronization
      */
-    public SyncResult sync(boolean force) {
+    public SyncResult sync(boolean force, InitialOrderSyncAdapter.OnInitialOrderSyncProgressListener onInitialSyncProgressListener) {
         if (!configStore.isConfigured()) {
             return new SyncResult(false, false);
         }
@@ -66,7 +70,7 @@ public class SyncManager {
 //            uploadClosings();
 
             if (download) {
-                downloadData();
+                downloadData(onInitialSyncProgressListener);
                 configStore.setLastDownload(System.currentTimeMillis());
             }
 
@@ -79,7 +83,7 @@ public class SyncManager {
         return new SyncResult(true, download);
     }
 
-    protected void downloadData() throws SyncException {
+    protected void downloadData(InitialOrderSyncAdapter.OnInitialOrderSyncProgressListener onInitialSyncProgressListener) throws SyncException {
         sentry.addBreadcrumb("sync.queue", "Start download");
 
         try {
@@ -94,7 +98,7 @@ public class SyncManager {
 //            (new TaxRuleSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
 //            (new TicketLayoutSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
             if (isOrdersStoreEmpty()) {
-                (new InitialOrderSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).initialDownload();
+                (new InitialOrderSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).initialDownload(onInitialSyncProgressListener);
             } else {
                 (new OrderSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
             }

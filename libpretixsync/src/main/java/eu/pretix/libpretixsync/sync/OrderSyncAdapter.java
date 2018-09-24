@@ -108,17 +108,18 @@ public class OrderSyncAdapter extends BaseDownloadSyncAdapter<Order, String> {
 
     @Override
     protected JSONObject downloadPage(String url, boolean isFirstPage) throws ApiException, ResourceNotModified {
-        ResourceLastModified resourceLastModified = store.select(ResourceLastModified.class)
+
+        ResourceLastModified resourceLastModified = null;
+
+        boolean addPdfDataParam = false;
+
+        if (isFirstPage) {
+            resourceLastModified = store.select(ResourceLastModified.class)
                 .where(ResourceLastModified.RESOURCE.eq("orders"))
                 .and(ResourceLastModified.EVENT_SLUG.eq(eventSlug))
                 .limit(1)
                 .get().firstOrNull();
-        if (resourceLastModified == null) {
-            resourceLastModified = new ResourceLastModified();
-            resourceLastModified.setResource("orders");
-            resourceLastModified.setEvent_slug(eventSlug);
 
-            boolean addPdfDataParam = false;
             if (addPdfDataParam) {
                 if (url.contains("?")) {
                     url += "&pdf_data=true";
@@ -126,15 +127,21 @@ public class OrderSyncAdapter extends BaseDownloadSyncAdapter<Order, String> {
                     url += "?pdf_data=true";
                 }
             }
-        } else {
-            try {
-                if (url.contains("?")) {
-                    url += "&modified_since=" + URLEncoder.encode(resourceLastModified.getLast_modified(), "UTF-8");
-                } else {
-                    url += "?modified_since=" + URLEncoder.encode(resourceLastModified.getLast_modified(), "UTF-8");
+
+            if (resourceLastModified == null) {
+                resourceLastModified = new ResourceLastModified();
+                resourceLastModified.setResource("orders");
+                resourceLastModified.setEvent_slug(eventSlug);
+            } else if (resourceLastModified.isDownloadCompleted()) {
+                try {
+                    if (url.contains("?")) {
+                        url += "&modified_since=" + URLEncoder.encode(resourceLastModified.getLast_modified(), "UTF-8");
+                    } else {
+                        url += "?modified_since=" + URLEncoder.encode(resourceLastModified.getLast_modified(), "UTF-8");
+                    }
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
                 }
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
             }
         }
 
