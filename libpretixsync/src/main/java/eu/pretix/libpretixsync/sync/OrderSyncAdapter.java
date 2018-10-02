@@ -111,8 +111,6 @@ public class OrderSyncAdapter extends BaseDownloadSyncAdapter<Order, String> {
 
         ResourceLastModified resourceLastModified = null;
 
-        boolean addPdfDataParam = false;
-
         if (isFirstPage) {
             resourceLastModified = store.select(ResourceLastModified.class)
                 .where(ResourceLastModified.RESOURCE.eq("orders"))
@@ -120,6 +118,7 @@ public class OrderSyncAdapter extends BaseDownloadSyncAdapter<Order, String> {
                 .limit(1)
                 .get().firstOrNull();
 
+            boolean addPdfDataParam = false; // do we need that at all?
             if (addPdfDataParam) {
                 if (url.contains("?")) {
                     url += "&pdf_data=true";
