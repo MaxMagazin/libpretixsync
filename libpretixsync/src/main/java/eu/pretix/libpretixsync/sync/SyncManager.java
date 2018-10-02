@@ -18,6 +18,7 @@ import eu.pretix.libpretixsync.db.Question;
 import eu.pretix.libpretixsync.db.QueuedCheckIn;
 import eu.pretix.libpretixsync.db.Receipt;
 import eu.pretix.libpretixsync.db.ReceiptLine;
+import eu.pretix.libpretixsync.db.ResourceLastModified;
 import io.requery.BlockingEntityStore;
 import io.requery.Persistable;
 
@@ -44,7 +45,7 @@ public class SyncManager {
         sync(force, null);
     }
 
-    public void sync(boolean force, InitialOrderSyncAdapter.OnInitialOrderSyncProgressListener onInitialSyncProgressListener) {
+    public void sync(boolean force, InitialOrderSyncAdapter.OnOrderSyncProgressListener onInitialSyncProgressListener) {
         if (!configStore.isConfigured()) {
             return;
         }
@@ -74,7 +75,7 @@ public class SyncManager {
         }
     }
 
-    protected void downloadData(InitialOrderSyncAdapter.OnInitialOrderSyncProgressListener onInitialSyncProgressListener) throws SyncException {
+    protected void downloadData(InitialOrderSyncAdapter.OnOrderSyncProgressListener onSyncProgressListener) throws SyncException {
         sentry.addBreadcrumb("sync.queue", "Start download");
 
         try {
@@ -84,8 +85,8 @@ public class SyncManager {
             (new QuotaSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
 //            (new TaxRuleSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
 //            (new TicketLayoutSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
-            if (isOrdersStoreEmpty()) {
-                (new InitialOrderSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).initialDownload(onInitialSyncProgressListener);
+            if (!wereOrdersAlreadyCompletelySynchronized()) {
+                (new InitialOrderSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).initialDownload(onSyncProgressListener);
             } else {
                 (new OrderSyncAdapter(dataStore, fileStorage, configStore.getEventSlug(), api)).download();
             }
@@ -98,9 +99,13 @@ public class SyncManager {
         }
     }
 
-    private boolean isOrdersStoreEmpty() {
-        List<Order> existingOrders = dataStore.select(Order.class).limit(5).get().toList();
-        return (existingOrders == null || existingOrders.isEmpty());
+    private boolean wereOrdersAlreadyCompletelySynchronized() {
+        ResourceLastModified resourceLastModified = dataStore.select(ResourceLastModified.class)
+                .where(ResourceLastModified.RESOURCE.eq("orders"))
+                .limit(1)
+                .get().firstOrNull();
+
+        return resourceLastModified != null && resourceLastModified.isDownloadCompleted();
     }
 
     protected void uploadReceipts() throws SyncException {
